@@ -1,5 +1,5 @@
 application: sinmetalcraft
-version: 20151011a
+version: 20151011b
 runtime: go
 api_version: go1
 

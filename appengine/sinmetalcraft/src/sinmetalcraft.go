@@ -20,24 +20,16 @@ const PROJECT_NAME = "sinmetalcraft"
 const INSTANCE_NAME = "minecraft"
 
 func init() {
-	http.HandleFunc("/minecraft", handler)
+	api := MinecraftApi{}
+
+	http.HandleFunc("/minecraft", handlerMinecraftLog)
+	http.HandleFunc("/api/1/minecraft", api.Post)
 }
 
-func handler(w http.ResponseWriter, r *http.Request) {
+type MinecraftApi struct{}
+
+func (a *MinecraftApi) Post(w http.ResponseWriter, r *http.Request) {
 	ctx := appengine.NewContext(r)
-
-	for k, v := range r.Header {
-		log.Infof(ctx, "%s:%s", k, v)
-	}
-
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Errorf(ctx, "ERROR request body read: %s", err)
-		log.Errorf(ctx, "ERROR task queue add: %s", err)
-		w.WriteHeader(500)
-		return
-	}
-	log.Infof(ctx, string(body))
 
 	client := &http.Client{
 		Transport: &oauth2.Transport{
@@ -61,6 +53,25 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(200)
 	w.Write([]byte(fmt.Sprintf("%s create done!", name)))
+}
+
+// handle cloud pub/sub request
+func handlerMinecraftLog(w http.ResponseWriter, r *http.Request) {
+	ctx := appengine.NewContext(r)
+
+	for k, v := range r.Header {
+		log.Infof(ctx, "%s:%s", k, v)
+	}
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Errorf(ctx, "ERROR request body read: %s", err)
+		w.WriteHeader(500)
+		return
+	}
+	log.Infof(ctx, string(body))
+
+	w.WriteHeader(200)
 }
 
 func createInstance(ctx context.Context, is *compute.InstancesService, world string, zone string, ipAddr string) (string, error) {
