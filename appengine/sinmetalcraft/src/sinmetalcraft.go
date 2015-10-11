@@ -1,6 +1,7 @@
 package sinmetalcraft
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -23,11 +24,36 @@ func init() {
 	api := MinecraftApi{}
 
 	http.HandleFunc("/minecraft", handlerMinecraftLog)
-	http.HandleFunc("/api/1/minecraft", api.Post)
+	http.HandleFunc("/api/1/minecraft", api.Handler)
+}
+
+type MinecraftApiListResponse struct {
+	Items  []MinecraftApiResponse `json:"items"`
+	Cursor string                 `json:cursor`
+}
+
+type MinecraftApiResponse struct {
+	InstanceName      string `json:"instanceName"`
+	Zone              string `json:"zone"`
+	IPAddr            string `json:"iPAddr"`
+	Status            string `json:"status"`
+	CreationTimestamp string `json:"creationTimestamp"`
 }
 
 type MinecraftApi struct{}
 
+// /api/1/minecraft handler
+func (a *MinecraftApi) Handler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		a.Post(w, r)
+	} else if r.Method == "GET" {
+		a.List(w, r)
+	} else {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	}
+}
+
+// create instance
 func (a *MinecraftApi) Post(w http.ResponseWriter, r *http.Request) {
 	ctx := appengine.NewContext(r)
 
@@ -55,6 +81,48 @@ func (a *MinecraftApi) Post(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(fmt.Sprintf("%s create done!", name)))
 }
 
+func (a *MinecraftApi) List(w http.ResponseWriter, r *http.Request) {
+	ctx := appengine.NewContext(r)
+
+	client := &http.Client{
+		Transport: &oauth2.Transport{
+			Source: google.AppEngineTokenSource(ctx, compute.ComputeScope),
+			Base:   &urlfetch.Transport{Context: ctx},
+		},
+	}
+	s, err := compute.New(client)
+	if err != nil {
+		log.Errorf(ctx, "ERROR compute.New: %s", err)
+		w.WriteHeader(500)
+		return
+	}
+	is := compute.NewInstancesService(s)
+	instances, cursor, err := listInstance(ctx, is, "asia-east1-b")
+	if err != nil {
+		log.Errorf(ctx, "ERROR compute.Instance List: %s", err)
+		w.WriteHeader(500)
+		return
+	}
+
+	var res []MinecraftApiResponse
+	for _, item := range instances {
+		res = append(res, MinecraftApiResponse{
+			InstanceName:      item.Name,
+			Zone:              item.Zone,
+			IPAddr:            item.NetworkInterfaces[0].AccessConfigs[0].NatIP,
+			Status:            item.Status,
+			CreationTimestamp: item.CreationTimestamp,
+		})
+	}
+
+	apiRes := MinecraftApiListResponse{
+		Items:  res,
+		Cursor: cursor,
+	}
+	w.WriteHeader(200)
+	json.NewEncoder(w).Encode(apiRes)
+}
+
 // handle cloud pub/sub request
 func handlerMinecraftLog(w http.ResponseWriter, r *http.Request) {
 	ctx := appengine.NewContext(r)
@@ -74,6 +142,17 @@ func handlerMinecraftLog(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 }
 
+// list gce instance
+func listInstance(ctx context.Context, is *compute.InstancesService, zone string) ([]*compute.Instance, string, error) {
+	ilc := is.List(PROJECT_NAME, zone)
+	il, err := ilc.Do()
+	if err != nil {
+		return nil, "", err
+	}
+	return il.Items, il.NextPageToken, nil
+}
+
+// create gce instance
 func createInstance(ctx context.Context, is *compute.InstancesService, world string, zone string, ipAddr string) (string, error) {
 	name := INSTANCE_NAME + "-" + world
 	log.Infof(ctx, "instance name = %s", name)
