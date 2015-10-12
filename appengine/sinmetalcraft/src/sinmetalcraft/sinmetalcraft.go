@@ -249,7 +249,7 @@ func createInstance(ctx context.Context, is *compute.InstancesService, world str
 				DeviceName: name,
 				Mode:       "READ_WRITE",
 				InitializeParams: &compute.AttachedDiskInitializeParams{
-					SourceImage: "https://www.googleapis.com/compute/v1/projects/" + PROJECT_NAME + "/global/images/minecraft-image",
+					SourceImage: "https://www.googleapis.com/compute/v1/projects/" + PROJECT_NAME + "/global/images/minecraft-image-v20151012",
 					DiskType:    "https://www.googleapis.com/compute/v1/projects/" + PROJECT_NAME + "/zones/" + zone + "/diskTypes/pd-ssd",
 					DiskSizeGb:  50,
 				},
