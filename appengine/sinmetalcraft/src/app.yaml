@@ -1,8 +1,11 @@
 application: sinmetalcraft
-version: 20151011b
+version: 20151012a
 runtime: go
 api_version: go1
 
 handlers:
+- url: /admin/.*
+  script: _go_app
+  login: admin
 - url: /.*
   script: _go_app
