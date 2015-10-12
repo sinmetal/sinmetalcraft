@@ -1,10 +1,12 @@
 package sinmetalcraft
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/log"
@@ -38,6 +40,36 @@ type MinecraftApiResponse struct {
 	IPAddr            string `json:"iPAddr"`
 	Status            string `json:"status"`
 	CreationTimestamp string `json:"creationTimestamp"`
+}
+
+type Metadata struct {
+	ProjectID   string            `json:"projectId"`
+	ServiceName string            `json:"serviceName"`
+	Zone        string            `json:"zone"`
+	Labels      map[string]string `json:"labels"`
+	Timestamp   string            `json:"timestamp"`
+}
+
+type StructPayload struct {
+	Log string `json:"log"`
+}
+
+type PubSubData struct {
+	Metadata      Metadata      `json:"metadata"`
+	InsertID      string        `json:"insertId"`
+	Log           string        `json:"log"`
+	StructPayload StructPayload `json:"structPayload"`
+}
+
+type Message struct {
+	Data       string            `json:"data"`
+	Attributes map[string]string `json:"attributes"`
+	MessageID  string            `json:"message_id"`
+}
+
+type PubSubBody struct {
+	Message      Message `json:"message"`
+	Subscription string  `json:"subscription"`
 }
 
 type MinecraftApi struct{}
@@ -137,9 +169,27 @@ func handlerMinecraftLog(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
 		return
 	}
-	log.Infof(ctx, string(body))
+	log.Infof(ctx, "request body = %s", string(body))
 
-	w.WriteHeader(200)
+	var psb PubSubBody
+	err = psb.Decode(body)
+	if err != nil {
+		log.Errorf(ctx, "ERROR request body Pub Sub Body decode: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	log.Infof(ctx, "request Pub Sub Body = %v", psb)
+
+	var psd PubSubData
+	err = psd.Decode(psb.Message.Data)
+	if err != nil {
+		log.Errorf(ctx, "ERROR request body Pub Sub Data decode: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	log.Infof(ctx, "request Pub Sub Data = %v", psd)
+
+	w.WriteHeader(http.StatusOK)
 }
 
 // list gce instance
@@ -231,4 +281,18 @@ func createInstance(ctx context.Context, is *compute.InstancesService, world str
 	log.Infof(ctx, "create instance ope.name = %s, ope.targetLink = %s, ope.Status = %s", ope.Name, ope.TargetLink, ope.Status)
 
 	return name, nil
+}
+
+func (psb *PubSubBody) Decode(body []byte) error {
+	err := json.Unmarshal(body, psb)
+	if err != nil {
+		return err
+	}
+	return nil
+
+}
+
+func (psd *PubSubData) Decode(body string) error {
+	mr := base64.NewDecoder(base64.StdEncoding, strings.NewReader(body))
+	return json.NewDecoder(mr).Decode(psd)
 }
