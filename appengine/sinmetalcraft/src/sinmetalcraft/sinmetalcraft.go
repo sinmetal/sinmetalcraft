@@ -1,6 +1,7 @@
 package sinmetalcraft
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -189,6 +190,36 @@ func handlerMinecraftLog(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Infof(ctx, "request Pub Sub Data = %v", psd)
 
+	var sm SlackMessage
+	fields := make([]SlackField, 0)
+
+	sa := SlackAttachment{
+		Color:      "#36a64f",
+		AuthorName: "sinmetalcraft",
+		AuthorIcon: "https://storage.googleapis.com/sinmetalcraft-image/minecraft.jpeg",
+		Title:      psd.StructPayload.Log,
+		Fields:     fields,
+	}
+
+	sm.UserName = "sinmetalcraft"
+	sm.IconUrl = "https://storage.googleapis.com/sinmetalcraft-image/minecraft.jpeg"
+	sm.Text = psd.StructPayload.Log
+	sm.Attachments = []SlackAttachment{sa}
+
+	acs := AppConfigService{}
+	config, err := acs.Get(ctx)
+	if err != nil {
+		log.Errorf(ctx, "ERROR App Config Get: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	_, err = PostToSlack(ctx, config.SlackPostUrl, sm)
+	if err != nil {
+		log.Errorf(ctx, "ERROR Post Slack: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -295,4 +326,39 @@ func (psb *PubSubBody) Decode(body []byte) error {
 func (psd *PubSubData) Decode(body string) error {
 	mr := base64.NewDecoder(base64.StdEncoding, strings.NewReader(body))
 	return json.NewDecoder(mr).Decode(psd)
+}
+
+type SlackMessage struct {
+	UserName    string            `json:"username"`
+	IconUrl     string            `json:"icon_url"`
+	Text        string            `json:"text"`
+	Attachments []SlackAttachment `json:"attachments"`
+}
+
+type SlackAttachment struct {
+	Color      string       `json:"color"`
+	AuthorName string       `json:"author_name"`
+	AuthorLink string       `json:"author_link"`
+	AuthorIcon string       `json:"author_icon"`
+	Title      string       `json:"title"`
+	TitleLink  string       `json:"title_link"`
+	Fields     []SlackField `json:"fields"`
+}
+
+type SlackField struct {
+	Title string `json:"title"`
+}
+
+func PostToSlack(ctx context.Context, url string, message SlackMessage) (resp *http.Response, err error) {
+	client := urlfetch.Client(ctx)
+
+	body, err := json.Marshal(message)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println(string(body))
+	return client.Post(
+		url,
+		"application/json",
+		bytes.NewReader(body))
 }
