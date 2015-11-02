@@ -79,6 +79,8 @@ type MinecraftApi struct{}
 func (a *MinecraftApi) Handler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		a.Post(w, r)
+	} else if r.Method == "PUT" {
+		a.Put(w, r)
 	} else if r.Method == "GET" {
 		a.List(w, r)
 	} else {
@@ -112,6 +114,52 @@ func (a *MinecraftApi) Post(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(200)
 	w.Write([]byte(fmt.Sprintf("%s create done!", name)))
+}
+
+// reset or start instance
+func (a *MinecraftApi) Put(w http.ResponseWriter, r *http.Request) {
+	ctx := appengine.NewContext(r)
+
+	ope := r.FormValue("operation")
+	if ope != "start" && ope != "reset" {
+		w.Write([]byte(`{"invalid request" : "operation param is start or reset"}`))
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	client := &http.Client{
+		Transport: &oauth2.Transport{
+			Source: google.AppEngineTokenSource(ctx, compute.ComputeScope),
+			Base:   &urlfetch.Transport{Context: ctx},
+		},
+	}
+	s, err := compute.New(client)
+	if err != nil {
+		log.Errorf(ctx, "ERROR compute.New: %s", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	is := compute.NewInstancesService(s)
+
+	var name string
+	if ope == "start" {
+		name, err = startInstance(ctx, is, "minecraft", "asia-east1-b")
+		if err != nil {
+			log.Errorf(ctx, "ERROR compute Instances Start: %s", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+	} else if ope == "reset" {
+		name, err = resetInstance(ctx, is, "minecraft", "asia-east1-b")
+		if err != nil {
+			log.Errorf(ctx, "ERROR compute Instances Reset: %s", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+	}
+
+	w.Write([]byte(fmt.Sprintf("%s %s done!", name, ope)))
+	w.WriteHeader(http.StatusOK)
 }
 
 func (a *MinecraftApi) List(w http.ResponseWriter, r *http.Request) {
@@ -236,8 +284,10 @@ func listInstance(ctx context.Context, is *compute.InstancesService, zone string
 // create gce instance
 func createInstance(ctx context.Context, is *compute.InstancesService, world string, zone string, ipAddr string) (string, error) {
 	name := INSTANCE_NAME + "-" + world
-	log.Infof(ctx, "instance name = %s", name)
+	log.Infof(ctx, "create instance name = %s", name)
 
+	startupScriptURL := "gs://sinmetalcraft-minecraft-shell/minecraftserver-startup-script.sh"
+	shutdownScriptURL := "gs://sinmetalcraft-minecraft-shell/minecraftserver-shutdown-script.sh"
 	newIns := &compute.Instance{
 		Name:        name,
 		Zone:        "https://www.googleapis.com/compute/v1/projects/" + PROJECT_NAME + "/zones/" + zone,
@@ -277,15 +327,15 @@ func createInstance(ctx context.Context, is *compute.InstancesService, world str
 			Items: []*compute.MetadataItems{
 				&compute.MetadataItems{
 					Key:   "startup-script-url",
-					Value: "gs://sinmetalcraft-minecraft-shell/minecraftserver-startup-script.sh",
+					Value: &startupScriptURL,
 				},
 				&compute.MetadataItems{
 					Key:   "shutdown-script-url",
-					Value: "gs://sinmetalcraft-minecraft-shell/minecraftserver-shutdown-script.sh",
+					Value: &shutdownScriptURL,
 				},
 				&compute.MetadataItems{
 					Key:   "world",
-					Value: world,
+					Value: &world,
 				},
 			},
 		},
@@ -310,6 +360,36 @@ func createInstance(ctx context.Context, is *compute.InstancesService, world str
 		return "", err
 	}
 	log.Infof(ctx, "create instance ope.name = %s, ope.targetLink = %s, ope.Status = %s", ope.Name, ope.TargetLink, ope.Status)
+
+	return name, nil
+}
+
+// start instance
+func startInstance(ctx context.Context, is *compute.InstancesService, world string, zone string) (string, error) {
+	name := INSTANCE_NAME + "-" + world
+	log.Infof(ctx, "start instance name = %s", name)
+
+	ope, err := is.Start(PROJECT_NAME, zone, name).Do()
+	if err != nil {
+		log.Errorf(ctx, "ERROR reset instance: %s", err)
+		return "", err
+	}
+	log.Infof(ctx, "start instance, %v", ope)
+
+	return name, nil
+}
+
+// reset instance
+func resetInstance(ctx context.Context, is *compute.InstancesService, world string, zone string) (string, error) {
+	name := INSTANCE_NAME + "-" + world
+	log.Infof(ctx, "reset instance name = %s", name)
+
+	ope, err := is.Reset(PROJECT_NAME, zone, name).Do()
+	if err != nil {
+		log.Errorf(ctx, "ERROR reset instance: %s", err)
+		return "", err
+	}
+	log.Infof(ctx, "reset instance, %v", ope)
 
 	return name, nil
 }
