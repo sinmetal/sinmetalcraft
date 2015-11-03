@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/log"
@@ -28,6 +29,17 @@ func init() {
 
 	http.HandleFunc("/minecraft", handlerMinecraftLog)
 	http.HandleFunc("/api/1/minecraft", api.Handler)
+}
+
+type Minecraft struct {
+	World           string    `json:"world"`
+	ResourceID      int64     `json:"resourceID"`
+	IPAddr          string    `json:"ipAddr" datastore:",unindexed"`
+	Status          string    `json:"status" datastore:",unindexed"`
+	OperationType   string    `json:"operationType" datastore:",unindexed"`
+	OperationStatus string    `json:"operationstatus" datastore:",unindexed"`
+	CreatedAt       time.Time `json:"createdAt"`
+	UpdatedAt       time.Time `json:"updatedAt"`
 }
 
 type MinecraftApiListResponse struct {
@@ -83,6 +95,8 @@ func (a *MinecraftApi) Handler(w http.ResponseWriter, r *http.Request) {
 		a.Put(w, r)
 	} else if r.Method == "GET" {
 		a.List(w, r)
+	} else if r.Method == "DELETE" {
+		a.Delete(w, r)
 	} else {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
@@ -122,8 +136,8 @@ func (a *MinecraftApi) Put(w http.ResponseWriter, r *http.Request) {
 
 	ope := r.FormValue("operation")
 	if ope != "start" && ope != "reset" {
-		w.Write([]byte(`{"invalid request" : "operation param is start or reset"}`))
 		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"invalid request" : "operation param is start or reset"}`))
 		return
 	}
 
@@ -158,8 +172,36 @@ func (a *MinecraftApi) Put(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	w.Write([]byte(fmt.Sprintf("%s %s done!", name, ope)))
 	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(fmt.Sprintf("%s %s done!", name, ope)))
+}
+
+func (a *MinecraftApi) Delete(w http.ResponseWriter, r *http.Request) {
+	ctx := appengine.NewContext(r)
+
+	client := &http.Client{
+		Transport: &oauth2.Transport{
+			Source: google.AppEngineTokenSource(ctx, compute.ComputeScope),
+			Base:   &urlfetch.Transport{Context: ctx},
+		},
+	}
+	s, err := compute.New(client)
+	if err != nil {
+		log.Errorf(ctx, "ERROR compute.New: %s", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	is := compute.NewInstancesService(s)
+
+	name, err := deleteInstance(ctx, is, "minecraft", "asia-east1-b")
+	if err != nil {
+		log.Errorf(ctx, "ERROR compute Instances Start: %s", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(fmt.Sprintf("%s delete done!", name)))
 }
 
 func (a *MinecraftApi) List(w http.ResponseWriter, r *http.Request) {
@@ -359,7 +401,12 @@ func createInstance(ctx context.Context, is *compute.InstancesService, world str
 		log.Errorf(ctx, "ERROR insert instance: %s", err)
 		return "", err
 	}
-	log.Infof(ctx, "create instance ope.name = %s, ope.targetLink = %s, ope.Status = %s", ope.Name, ope.TargetLink, ope.Status)
+	WriteLog(ctx, "INSTNCE_CREATE_OPE", ope)
+
+	_, err = CallMinecraftTQ(ctx, world, ipAddr, ope.Name)
+	if err != nil {
+		return name, err
+	}
 
 	return name, nil
 }
@@ -374,7 +421,13 @@ func startInstance(ctx context.Context, is *compute.InstancesService, world stri
 		log.Errorf(ctx, "ERROR reset instance: %s", err)
 		return "", err
 	}
-	log.Infof(ctx, "start instance, %v", ope)
+	WriteLog(ctx, "INSTNCE_START_OPE", ope)
+
+	// TODO ipAddr
+	_, err = CallMinecraftTQ(ctx, world, "", ope.Name)
+	if err != nil {
+		return name, err
+	}
 
 	return name, nil
 }
@@ -389,7 +442,34 @@ func resetInstance(ctx context.Context, is *compute.InstancesService, world stri
 		log.Errorf(ctx, "ERROR reset instance: %s", err)
 		return "", err
 	}
-	log.Infof(ctx, "reset instance, %v", ope)
+	WriteLog(ctx, "INSTNCE_RESET_OPE", ope)
+
+	// TODO ipAddr
+	_, err = CallMinecraftTQ(ctx, world, "", ope.Name)
+	if err != nil {
+		return name, err
+	}
+
+	return name, nil
+}
+
+// delete instance
+func deleteInstance(ctx context.Context, is *compute.InstancesService, world string, zone string) (string, error) {
+	name := INSTANCE_NAME + "-" + world
+	log.Infof(ctx, "delete instance name = %s", name)
+
+	ope, err := is.Delete(PROJECT_NAME, zone, name).Do()
+	if err != nil {
+		log.Errorf(ctx, "ERROR delete instance: %s", err)
+		return "", err
+	}
+	WriteLog(ctx, "INSTNCE_DELETE_OPE", ope)
+
+	// TODO ipAddr
+	_, err = CallMinecraftTQ(ctx, world, "", ope.Name)
+	if err != nil {
+		return name, err
+	}
 
 	return name, nil
 }
@@ -441,4 +521,12 @@ func PostToSlack(ctx context.Context, url string, message SlackMessage) (resp *h
 		url,
 		"application/json",
 		bytes.NewReader(body))
+}
+
+func WriteLog(ctx context.Context, key string, v interface{}) {
+	body, err := json.Marshal(v)
+	if err != nil {
+		log.Errorf(ctx, "WriteLog Error %s %v", err.Error(), v)
+	}
+	log.Infof(ctx, `{"%s":%s}`, key, body)
 }

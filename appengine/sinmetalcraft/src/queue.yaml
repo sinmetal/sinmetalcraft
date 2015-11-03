@@ -1,0 +1,9 @@
+queue:
+- name: minecraft
+  rate: 1/s
+  bucket_size: 1
+  max_concurrent_requests: 1
+  retry_parameters:
+      min_backoff_seconds: 10
+      max_backoff_seconds: 30
+      max_doublings: 0
