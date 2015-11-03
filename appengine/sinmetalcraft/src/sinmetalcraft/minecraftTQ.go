@@ -32,6 +32,7 @@ func CallMinecraftTQ(c context.Context, world string, ipAddr string, operationID
 		"ipAddr":      {ipAddr},
 		"operationID": {operationID},
 	})
+	t.Delay = time.Second * 30
 	return taskqueue.Add(c, t, "minecraft")
 }
 
@@ -98,7 +99,7 @@ func (a *MinecraftTQApi) Handler(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		log.Infof(ctx, "Operation Status != DONE")
-		resStatus = http.StatusBadRequest
+		resStatus = http.StatusRequestTimeout
 
 		err = datastore.RunInTransaction(ctx, func(c context.Context) error {
 			var entity Minecraft
