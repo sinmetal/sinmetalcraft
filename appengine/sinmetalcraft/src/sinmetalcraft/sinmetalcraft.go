@@ -95,6 +95,8 @@ func (a *MinecraftApi) Handler(w http.ResponseWriter, r *http.Request) {
 		a.Put(w, r)
 	} else if r.Method == "GET" {
 		a.List(w, r)
+	} else if r.Method == "DELETE" {
+		a.Delete(w, r)
 	} else {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
@@ -172,6 +174,34 @@ func (a *MinecraftApi) Put(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(fmt.Sprintf("%s %s done!", name, ope)))
+}
+
+func (a *MinecraftApi) Delete(w http.ResponseWriter, r *http.Request) {
+	ctx := appengine.NewContext(r)
+
+	client := &http.Client{
+		Transport: &oauth2.Transport{
+			Source: google.AppEngineTokenSource(ctx, compute.ComputeScope),
+			Base:   &urlfetch.Transport{Context: ctx},
+		},
+	}
+	s, err := compute.New(client)
+	if err != nil {
+		log.Errorf(ctx, "ERROR compute.New: %s", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	is := compute.NewInstancesService(s)
+
+	name, err := deleteInstance(ctx, is, "minecraft", "asia-east1-b")
+	if err != nil {
+		log.Errorf(ctx, "ERROR compute Instances Start: %s", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(fmt.Sprintf("%s delete done!", name)))
 }
 
 func (a *MinecraftApi) List(w http.ResponseWriter, r *http.Request) {
@@ -413,6 +443,27 @@ func resetInstance(ctx context.Context, is *compute.InstancesService, world stri
 		return "", err
 	}
 	WriteLog(ctx, "INSTNCE_RESET_OPE", ope)
+
+	// TODO ipAddr
+	_, err = CallMinecraftTQ(ctx, world, "", ope.Name)
+	if err != nil {
+		return name, err
+	}
+
+	return name, nil
+}
+
+// delete instance
+func deleteInstance(ctx context.Context, is *compute.InstancesService, world string, zone string) (string, error) {
+	name := INSTANCE_NAME + "-" + world
+	log.Infof(ctx, "delete instance name = %s", name)
+
+	ope, err := is.Delete(PROJECT_NAME, zone, name).Do()
+	if err != nil {
+		log.Errorf(ctx, "ERROR delete instance: %s", err)
+		return "", err
+	}
+	WriteLog(ctx, "INSTNCE_DELETE_OPE", ope)
 
 	// TODO ipAddr
 	_, err = CallMinecraftTQ(ctx, world, "", ope.Name)
