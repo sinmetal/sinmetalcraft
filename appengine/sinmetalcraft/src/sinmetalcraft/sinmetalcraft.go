@@ -393,16 +393,16 @@ func listInstance(ctx context.Context, is *compute.InstancesService, zone string
 }
 
 // create gce instance
-func createInstance(ctx context.Context, is *compute.InstancesService, world string, zone string, ipAddr string) (string, error) {
-	name := INSTANCE_NAME + "-" + world
+func createInstance(ctx context.Context, is *compute.InstancesService, minecraft Minecraft) (string, error) {
+	name := INSTANCE_NAME + "-" + minecraft.World
 	log.Infof(ctx, "create instance name = %s", name)
 
 	startupScriptURL := "gs://sinmetalcraft-minecraft-shell/minecraftserver-startup-script.sh"
 	shutdownScriptURL := "gs://sinmetalcraft-minecraft-shell/minecraftserver-shutdown-script.sh"
 	newIns := &compute.Instance{
 		Name:        name,
-		Zone:        "https://www.googleapis.com/compute/v1/projects/" + PROJECT_NAME + "/zones/" + zone,
-		MachineType: "https://www.googleapis.com/compute/v1/projects/" + PROJECT_NAME + "/zones/" + zone + "/machineTypes/n1-highcpu-2",
+		Zone:        "https://www.googleapis.com/compute/v1/projects/" + PROJECT_NAME + "/zones/" + minecraft.Zone,
+		MachineType: "https://www.googleapis.com/compute/v1/projects/" + PROJECT_NAME + "/zones/" + minecraft.Zone + "/machineTypes/n1-highcpu-2",
 		Disks: []*compute.AttachedDisk{
 			&compute.AttachedDisk{
 				AutoDelete: true,
@@ -411,7 +411,7 @@ func createInstance(ctx context.Context, is *compute.InstancesService, world str
 				Mode:       "READ_WRITE",
 				InitializeParams: &compute.AttachedDiskInitializeParams{
 					SourceImage: "https://www.googleapis.com/compute/v1/projects/" + PROJECT_NAME + "/global/images/minecraft-image-v20151012",
-					DiskType:    "https://www.googleapis.com/compute/v1/projects/" + PROJECT_NAME + "/zones/" + zone + "/diskTypes/pd-ssd",
+					DiskType:    "https://www.googleapis.com/compute/v1/projects/" + PROJECT_NAME + "/zones/" + minecraft.Zone + "/diskTypes/pd-ssd",
 					DiskSizeGb:  50,
 				},
 			},
@@ -424,7 +424,7 @@ func createInstance(ctx context.Context, is *compute.InstancesService, world str
 					&compute.AccessConfig{
 						Name:  "External NAT",
 						Type:  "ONE_TO_ONE_NAT",
-						NatIP: ipAddr,
+						NatIP: minecraft.IPAddr,
 					},
 				},
 			},
@@ -446,7 +446,7 @@ func createInstance(ctx context.Context, is *compute.InstancesService, world str
 				},
 				&compute.MetadataItems{
 					Key:   "world",
-					Value: &world,
+					Value: &minecraft.World,
 				},
 			},
 		},
@@ -465,14 +465,14 @@ func createInstance(ctx context.Context, is *compute.InstancesService, world str
 			Preemptible:       true,
 		},
 	}
-	ope, err := is.Insert(PROJECT_NAME, zone, newIns).Do()
+	ope, err := is.Insert(PROJECT_NAME, minecraft.Zone, newIns).Do()
 	if err != nil {
 		log.Errorf(ctx, "ERROR insert instance: %s", err)
 		return "", err
 	}
 	WriteLog(ctx, "INSTNCE_CREATE_OPE", ope)
 
-	_, err = CallMinecraftTQ(ctx, world, ipAddr, ope.Name)
+	_, err = CallMinecraftTQ(ctx, minecraft.Key, ope.Name)
 	if err != nil {
 		return name, err
 	}
@@ -481,19 +481,18 @@ func createInstance(ctx context.Context, is *compute.InstancesService, world str
 }
 
 // start instance
-func startInstance(ctx context.Context, is *compute.InstancesService, world string, zone string) (string, error) {
-	name := INSTANCE_NAME + "-" + world
+func startInstance(ctx context.Context, is *compute.InstancesService, minecraft Minecraft) (string, error) {
+	name := INSTANCE_NAME + "-" + minecraft.World
 	log.Infof(ctx, "start instance name = %s", name)
 
-	ope, err := is.Start(PROJECT_NAME, zone, name).Do()
+	ope, err := is.Start(PROJECT_NAME, minecraft.Zone, name).Do()
 	if err != nil {
 		log.Errorf(ctx, "ERROR reset instance: %s", err)
 		return "", err
 	}
 	WriteLog(ctx, "INSTNCE_START_OPE", ope)
 
-	// TODO ipAddr
-	_, err = CallMinecraftTQ(ctx, world, "", ope.Name)
+	_, err = CallMinecraftTQ(ctx, minecraft.Key, ope.Name)
 	if err != nil {
 		return name, err
 	}
@@ -502,19 +501,18 @@ func startInstance(ctx context.Context, is *compute.InstancesService, world stri
 }
 
 // reset instance
-func resetInstance(ctx context.Context, is *compute.InstancesService, world string, zone string) (string, error) {
-	name := INSTANCE_NAME + "-" + world
+func resetInstance(ctx context.Context, is *compute.InstancesService, minecraft Minecraft) (string, error) {
+	name := INSTANCE_NAME + "-" + minecraft.World
 	log.Infof(ctx, "reset instance name = %s", name)
 
-	ope, err := is.Reset(PROJECT_NAME, zone, name).Do()
+	ope, err := is.Reset(PROJECT_NAME, minecraft.Zone, name).Do()
 	if err != nil {
 		log.Errorf(ctx, "ERROR reset instance: %s", err)
 		return "", err
 	}
 	WriteLog(ctx, "INSTNCE_RESET_OPE", ope)
 
-	// TODO ipAddr
-	_, err = CallMinecraftTQ(ctx, world, "", ope.Name)
+	_, err = CallMinecraftTQ(ctx, minecraft.Key, ope.Name)
 	if err != nil {
 		return name, err
 	}
@@ -523,19 +521,18 @@ func resetInstance(ctx context.Context, is *compute.InstancesService, world stri
 }
 
 // delete instance
-func deleteInstance(ctx context.Context, is *compute.InstancesService, world string, zone string) (string, error) {
-	name := INSTANCE_NAME + "-" + world
+func deleteInstance(ctx context.Context, is *compute.InstancesService, minecraft Minecraft) (string, error) {
+	name := INSTANCE_NAME + "-" + minecraft.Zone
 	log.Infof(ctx, "delete instance name = %s", name)
 
-	ope, err := is.Delete(PROJECT_NAME, zone, name).Do()
+	ope, err := is.Delete(PROJECT_NAME, minecraft.Zone, name).Do()
 	if err != nil {
 		log.Errorf(ctx, "ERROR delete instance: %s", err)
 		return "", err
 	}
 	WriteLog(ctx, "INSTNCE_DELETE_OPE", ope)
 
-	// TODO ipAddr
-	_, err = CallMinecraftTQ(ctx, world, "", ope.Name)
+	_, err = CallMinecraftTQ(ctx, minecraft.Key, ope.Name)
 	if err != nil {
 		return name, err
 	}
