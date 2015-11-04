@@ -9,6 +9,7 @@ import (
 	"google.golang.org/appengine/datastore"
 	"google.golang.org/appengine/log"
 	"google.golang.org/appengine/urlfetch"
+	"google.golang.org/appengine/user"
 
 	"google.golang.org/api/compute/v1"
 
@@ -46,6 +47,20 @@ func (a *ServerApi) Handler(w http.ResponseWriter, r *http.Request) {
 // create new instance
 func (a *ServerApi) Post(w http.ResponseWriter, r *http.Request) {
 	ctx := appengine.NewContext(r)
+
+	u := user.Current(ctx)
+	if u == nil {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(http.StatusUnauthorized)
+		loginURL, err := user.LoginURL(ctx, "")
+		if err != nil {
+			log.Errorf(ctx, "get user login URL error, %s", err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.Write([]byte(fmt.Sprintf(`{"loginURL":"%s"}`, loginURL)))
+		return
+	}
 
 	var form map[string]string
 	err := json.NewDecoder(r.Body).Decode(&form)
@@ -117,6 +132,20 @@ func (a *ServerApi) Post(w http.ResponseWriter, r *http.Request) {
 // reset or start instance
 func (a *ServerApi) Put(w http.ResponseWriter, r *http.Request) {
 	ctx := appengine.NewContext(r)
+
+	u := user.Current(ctx)
+	if u == nil {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(http.StatusUnauthorized)
+		loginURL, err := user.LoginURL(ctx, "")
+		if err != nil {
+			log.Errorf(ctx, "get user login URL error, %s", err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.Write([]byte(fmt.Sprintf(`{"loginURL":"%s"}`, loginURL)))
+		return
+	}
 
 	var param ServerApiPutParam
 	err := json.NewDecoder(r.Body).Decode(&param)
@@ -206,6 +235,20 @@ func (a *ServerApi) Put(w http.ResponseWriter, r *http.Request) {
 func (a *ServerApi) Delete(w http.ResponseWriter, r *http.Request) {
 	ctx := appengine.NewContext(r)
 
+	u := user.Current(ctx)
+	if u == nil {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(http.StatusUnauthorized)
+		loginURL, err := user.LoginURL(ctx, "")
+		if err != nil {
+			log.Errorf(ctx, "get user login URL error, %s", err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.Write([]byte(fmt.Sprintf(`{"loginURL":"%s"}`, loginURL)))
+		return
+	}
+
 	keyStr := r.FormValue("key")
 
 	key, err := datastore.DecodeKey(keyStr)
@@ -230,6 +273,7 @@ func (a *ServerApi) Delete(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	minecraft.Key = key
 
 	client := &http.Client{
 		Transport: &oauth2.Transport{
@@ -254,12 +298,31 @@ func (a *ServerApi) Delete(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf(`"{"message": "%s delete done!"}`, name)))
+	w.Write([]byte(fmt.Sprintf(`{"message": "%s delete done!"}`, name)))
 }
 
 // list instance
 func (a *ServerApi) List(w http.ResponseWriter, r *http.Request) {
 	ctx := appengine.NewContext(r)
+
+	u := user.Current(ctx)
+	if u == nil {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(http.StatusUnauthorized)
+		loginURL, err := user.LoginURL(ctx, "")
+		if err != nil {
+			log.Errorf(ctx, "get user login URL error, %s", err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.Write([]byte(fmt.Sprintf(`{"loginURL":"%s"}`, loginURL)))
+		return
+	}
+	if user.IsAdmin(ctx) == false {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
 
 	client := &http.Client{
 		Transport: &oauth2.Transport{
