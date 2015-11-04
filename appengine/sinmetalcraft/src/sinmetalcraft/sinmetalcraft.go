@@ -522,7 +522,7 @@ func resetInstance(ctx context.Context, is *compute.InstancesService, minecraft 
 
 // delete instance
 func deleteInstance(ctx context.Context, is *compute.InstancesService, minecraft Minecraft) (string, error) {
-	name := INSTANCE_NAME + "-" + minecraft.Zone
+	name := INSTANCE_NAME + "-" + minecraft.World
 	log.Infof(ctx, "delete instance name = %s", name)
 
 	ope, err := is.Delete(PROJECT_NAME, minecraft.Zone, name).Do()
