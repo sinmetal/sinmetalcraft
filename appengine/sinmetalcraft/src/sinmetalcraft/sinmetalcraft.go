@@ -19,8 +19,6 @@ import (
 	"google.golang.org/api/compute/v1"
 
 	"golang.org/x/net/context"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 )
 
 const PROJECT_NAME = "sinmetalcraft"
@@ -241,74 +239,80 @@ func (a *MinecraftApi) Put(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(minecraft)
 }
 
+// delete world data
 func (a *MinecraftApi) Delete(w http.ResponseWriter, r *http.Request) {
 	ctx := appengine.NewContext(r)
 
-	client := &http.Client{
-		Transport: &oauth2.Transport{
-			Source: google.AppEngineTokenSource(ctx, compute.ComputeScope),
-			Base:   &urlfetch.Transport{Context: ctx},
-		},
-	}
-	s, err := compute.New(client)
-	if err != nil {
-		log.Errorf(ctx, "ERROR compute.New: %s", err)
-		w.WriteHeader(http.StatusInternalServerError)
+	u := user.Current(ctx)
+	if u == nil {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(http.StatusUnauthorized)
+		loginURL, err := user.LoginURL(ctx, "")
+		if err != nil {
+			log.Errorf(ctx, "get user login URL error, %s", err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.Write([]byte(fmt.Sprintf(`{"loginURL":"%s"}`, loginURL)))
 		return
 	}
-	is := compute.NewInstancesService(s)
-
-	name, err := deleteInstance(ctx, is, "minecraft", "asia-east1-b")
-	if err != nil {
-		log.Errorf(ctx, "ERROR compute Instances Start: %s", err)
-		w.WriteHeader(http.StatusInternalServerError)
+	if user.IsAdmin(ctx) == false {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(http.StatusForbidden)
 		return
 	}
 
+	keyStr := r.FormValue("key")
+
+	key, err := datastore.DecodeKey(keyStr)
+	if err != nil {
+		log.Infof(ctx, "invalid key, %v", r.Body)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"message": "invalid key."}`))
+		return
+	}
+
+	err = datastore.RunInTransaction(ctx, func(c context.Context) error {
+		return datastore.Delete(ctx, key)
+	}, nil)
+	if err != nil {
+		log.Errorf(ctx, "Minecraft Delete Error. error = %s", err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf("%s delete done!", name)))
+	json.NewEncoder(w).Encode(`{}`)
 }
 
+// list world data
 func (a *MinecraftApi) List(w http.ResponseWriter, r *http.Request) {
 	ctx := appengine.NewContext(r)
 
-	client := &http.Client{
-		Transport: &oauth2.Transport{
-			Source: google.AppEngineTokenSource(ctx, compute.ComputeScope),
-			Base:   &urlfetch.Transport{Context: ctx},
-		},
-	}
-	s, err := compute.New(client)
-	if err != nil {
-		log.Errorf(ctx, "ERROR compute.New: %s", err)
-		w.WriteHeader(500)
-		return
-	}
-	is := compute.NewInstancesService(s)
-	instances, cursor, err := listInstance(ctx, is, "asia-east1-b")
-	if err != nil {
-		log.Errorf(ctx, "ERROR compute.Instance List: %s", err)
-		w.WriteHeader(500)
-		return
+	q := datastore.NewQuery("Minecraft").Order("-UpdatedAt")
+
+	list := make([]*Minecraft, 0)
+	for t := q.Run(ctx); ; {
+		var entity Minecraft
+		key, err := t.Next(&entity)
+		if err == datastore.Done {
+			break
+		}
+		if err != nil {
+			log.Errorf(ctx, "Minecraft Query Error. error = %s", err.Error())
+			w.Header().Set("Content-Type", "application/json; charset=utf-8")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		entity.Key = key
+		entity.KeyStr = key.Encode()
+		list = append(list, &entity)
 	}
 
-	var res []MinecraftApiResponse
-	for _, item := range instances {
-		res = append(res, MinecraftApiResponse{
-			InstanceName:      item.Name,
-			Zone:              item.Zone,
-			IPAddr:            item.NetworkInterfaces[0].AccessConfigs[0].NatIP,
-			Status:            item.Status,
-			CreationTimestamp: item.CreationTimestamp,
-		})
-	}
-
-	apiRes := MinecraftApiListResponse{
-		Items:  res,
-		Cursor: cursor,
-	}
-	w.WriteHeader(200)
-	json.NewEncoder(w).Encode(apiRes)
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(list)
 }
 
 // handle cloud pub/sub request
