@@ -34,15 +34,17 @@ func init() {
 }
 
 type Minecraft struct {
-	World           string    `json:"world"`
-	ResourceID      int64     `json:"resourceID"`
-	Zone            string    `json:"zone" datastore:",unindexed"`
-	IPAddr          string    `json:"ipAddr" datastore:",unindexed"`
-	Status          string    `json:"status" datastore:",unindexed"`
-	OperationType   string    `json:"operationType" datastore:",unindexed"`
-	OperationStatus string    `json:"operationstatus" datastore:",unindexed"`
-	CreatedAt       time.Time `json:"createdAt"`
-	UpdatedAt       time.Time `json:"updatedAt"`
+	Key             *datastore.Key `json:"-" datastore:"-"`
+	KeyStr          string         `json:"key" datastore:"-"`
+	World           string         `json:"world"`
+	ResourceID      int64          `json:"resourceID"`
+	Zone            string         `json:"zone" datastore:",unindexed"`
+	IPAddr          string         `json:"ipAddr" datastore:",unindexed"`
+	Status          string         `json:"status" datastore:",unindexed"`
+	OperationType   string         `json:"operationType" datastore:",unindexed"`
+	OperationStatus string         `json:"operationstatus" datastore:",unindexed"`
+	CreatedAt       time.Time      `json:"createdAt"`
+	UpdatedAt       time.Time      `json:"updatedAt"`
 }
 
 type MinecraftApiListResponse struct {
@@ -105,7 +107,7 @@ func (a *MinecraftApi) Handler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// create new world data
+// create world data
 func (a *MinecraftApi) Post(w http.ResponseWriter, r *http.Request) {
 	ctx := appengine.NewContext(r)
 
@@ -162,56 +164,81 @@ func (a *MinecraftApi) Post(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	minecraft.KeyStr = key.Encode()
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(minecraft)
 }
 
-// reset or start instance
+// update world data
 func (a *MinecraftApi) Put(w http.ResponseWriter, r *http.Request) {
 	ctx := appengine.NewContext(r)
 
-	ope := r.FormValue("operation")
-	if ope != "start" && ope != "reset" {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"invalid request" : "operation param is start or reset"}`))
+	u := user.Current(ctx)
+	if u == nil {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(http.StatusUnauthorized)
+		loginURL, err := user.LoginURL(ctx, "")
+		if err != nil {
+			log.Errorf(ctx, "get user login URL error, %s", err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.Write([]byte(fmt.Sprintf(`{"loginURL":"%s"}`, loginURL)))
+		return
+	}
+	if user.IsAdmin(ctx) == false {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(http.StatusForbidden)
 		return
 	}
 
-	client := &http.Client{
-		Transport: &oauth2.Transport{
-			Source: google.AppEngineTokenSource(ctx, compute.ComputeScope),
-			Base:   &urlfetch.Transport{Context: ctx},
-		},
-	}
-	s, err := compute.New(client)
+	var minecraft Minecraft
+	err := json.NewDecoder(r.Body).Decode(&minecraft)
 	if err != nil {
-		log.Errorf(ctx, "ERROR compute.New: %s", err)
+		log.Infof(ctx, "rquest body, %v", r.Body)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"message": "invalid request."}`))
+		return
+	}
+	defer r.Body.Close()
+
+	key, err := datastore.DecodeKey(minecraft.KeyStr)
+	if err != nil {
+		log.Infof(ctx, "invalid key, %v", r.Body)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"message": "invalid key."}`))
+		return
+	}
+	minecraft.Key = key
+
+	err = datastore.RunInTransaction(ctx, func(c context.Context) error {
+		var entity Minecraft
+		err := datastore.Get(ctx, key, &entity)
+		if err != datastore.ErrNoSuchEntity && err != nil {
+			return err
+		}
+
+		entity.IPAddr = minecraft.IPAddr
+		entity.Zone = minecraft.Zone
+		entity.UpdatedAt = time.Now()
+		_, err = datastore.Put(ctx, key, &minecraft)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}, nil)
+	if err != nil {
+		log.Errorf(ctx, "Minecraft Put Error. error = %s", err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	is := compute.NewInstancesService(s)
 
-	var name string
-	if ope == "start" {
-		name, err = startInstance(ctx, is, "minecraft", "asia-east1-b")
-		if err != nil {
-			log.Errorf(ctx, "ERROR compute Instances Start: %s", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-	} else if ope == "reset" {
-		name, err = resetInstance(ctx, is, "minecraft", "asia-east1-b")
-		if err != nil {
-			log.Errorf(ctx, "ERROR compute Instances Reset: %s", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-	}
-
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf("%s %s done!", name, ope)))
+	json.NewEncoder(w).Encode(minecraft)
 }
 
 func (a *MinecraftApi) Delete(w http.ResponseWriter, r *http.Request) {
