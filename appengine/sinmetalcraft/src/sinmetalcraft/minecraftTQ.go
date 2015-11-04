@@ -13,6 +13,7 @@ import (
 
 	"google.golang.org/api/compute/v1"
 
+	"errors"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -27,6 +28,14 @@ func init() {
 type MinecraftTQApi struct{}
 
 func CallMinecraftTQ(c context.Context, minecraftKey *datastore.Key, operationID string) (*taskqueue.Task, error) {
+	log.Infof(c, "Call Minecraft TQ, key = %v, operationID = %s", minecraftKey, operationID)
+	if minecraftKey == nil {
+		return nil, errors.New("key is required")
+	}
+	if len(operationID) < 1 {
+		return nil, errors.New("operationID is required")
+	}
+
 	t := taskqueue.NewPOSTTask("/tq/1/minecraft", url.Values{
 		"keyStr":      {minecraftKey.Encode()},
 		"operationID": {operationID},
@@ -39,7 +48,7 @@ func CallMinecraftTQ(c context.Context, minecraftKey *datastore.Key, operationID
 func (a *MinecraftTQApi) Handler(w http.ResponseWriter, r *http.Request) {
 	ctx := appengine.NewContext(r)
 
-	keyStr := r.FormValue("KeyStr")
+	keyStr := r.FormValue("keyStr")
 	operationID := r.FormValue("operationID")
 
 	log.Infof(ctx, "keyStr = %s, operationID = %s", keyStr, operationID)
