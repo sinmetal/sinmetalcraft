@@ -4,6 +4,17 @@ runtime: go
 api_version: go1
 
 handlers:
+- url: /
+  static_files: index.html
+  upload: index.html
+- url: /css
+  static_dir: webapp/css
+- url: /images
+  static_dir: images
+- url: /javascript
+  static_dir: webapp/javascript
+- url: /template
+  static_dir: webapp/template
 - url: /admin/.*
   script: _go_app
   login: admin

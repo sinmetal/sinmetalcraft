@@ -1,0 +1,13 @@
+<div>
+    <md-button class="md-raised" ng-click="exa.backToList()">Back</md-button>
+    <md-button class="md-primary md-raised" ng-click="exa.viewEditPage()">Edit</md-button>
+    <md-button class="md-primary md-raised" ng-click="exa.showConfirm($event)" flex flex-md="100">
+        Delete
+    </md-button>
+    <md-content flex layout-padding>
+        <p>Key : {{exa.store.example.key}}</p>
+        <p>Name : {{exa.store.example.name}}</p>
+        <p>CreatedAt : {{exa.store.example.createdAt}}</p>
+        <p>UpdatedAt : {{exa.store.example.updatedAt}}</p>
+    </md-content>
+</div>
