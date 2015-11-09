@@ -1,0 +1,45 @@
+{
+  "version": "v4",
+  "repo": "borisyankov/DefinitelyTyped",
+  "ref": "master",
+  "path": "src/main/typescript/typings",
+  "bundle": "src/main/typescript/typings/bundle.d.ts",
+  "installed": {
+    "jquery/jquery.d.ts": {
+      "commit": "db33e4bd3629b93805d9b53c5fffc72f2c606477"
+    },
+    "angularjs/angular.d.ts": {
+      "commit": "db33e4bd3629b93805d9b53c5fffc72f2c606477"
+    },
+    "angularjs/angular-mocks.d.ts": {
+      "commit": "db33e4bd3629b93805d9b53c5fffc72f2c606477"
+    },
+    "angularjs/angular-route.d.ts": {
+      "commit": "db33e4bd3629b93805d9b53c5fffc72f2c606477"
+    },
+    "angularjs/angular-sanitize.d.ts": {
+      "commit": "db33e4bd3629b93805d9b53c5fffc72f2c606477"
+    },
+    "angular-material/angular-material.d.ts": {
+      "commit": "3b96f86f5e58dc1d3a530acb5ba50d516d96c5d0"
+    },
+    "angular-storage/angular-storage.d.ts": {
+      "commit": "28314f78489242a804b608a2e9d784e728b29cc3"
+    },
+    "angular-translate/angular-translate.d.ts": {
+      "commit": "bfa960ba203e50b5f58ae9606c20905d5e419994"
+    },
+    "mocha/mocha.d.ts": {
+      "commit": "db33e4bd3629b93805d9b53c5fffc72f2c606477"
+    },
+    "assert/assert.d.ts": {
+      "commit": "db33e4bd3629b93805d9b53c5fffc72f2c606477"
+    },
+    "moment/moment.d.ts": {
+      "commit": "db33e4bd3629b93805d9b53c5fffc72f2c606477"
+    },
+    "sinon/sinon.d.ts": {
+      "commit": "db33e4bd3629b93805d9b53c5fffc72f2c606477"
+    }
+  }
+}

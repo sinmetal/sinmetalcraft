@@ -25,3 +25,14 @@ _testmain.go
 
 # idea
 .idea
+
+#client
+.tscache
+bower-task
+bower_components
+node_modules
+typings
+*.js
+*.map
+appengine/sinmetalcraft/src/test/typescript/lib
+appengine/sinmetalcraft/src/webapp/css/lib
