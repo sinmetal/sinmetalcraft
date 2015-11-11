@@ -97,6 +97,30 @@ namespace SinmetalCraft.Controller.Example.List {
                 });
         }
 
+        restartServer(index:number, operation:string):void {
+            this.store.example = this.store.examples.items[index];
+            var request : SinmetalCraft.Model.IServerUpdateRequest = {
+                "key" : this.store.example.key,
+                "operation": operation
+            };
+
+            this.serverService.update(request)
+                .success(data=> {
+                    this.showServerStartToast();
+                })
+                .error((_, status) => {
+                    if (status === 0) {
+                        // ページリロードなどによる中断
+                        return;
+                    }
+                    if (status === 401) {
+                        this.showAuthToast("/");
+                        return;
+                    }
+                    this.showErrorToast(status);
+                });
+        }
+
         viewEntryPage():void {
             this.$location.path("/app/example/entry");
         }

@@ -20,7 +20,11 @@
                 <td>{{item.status}}</td>
                 <td>{{item.createdAt}}</td>
                 <td>{{item.updatedAt}}</td>
-                <td><md-button class="md-raised md-primary" ng-click="exa.startServer($index)">Start</md-button></td>
+                <td>
+                    <md-button ng-if="item.status=='not_exists'" class="md-raised md-primary" ng-click="exa.startServer($index)">Start</md-button>
+                    <md-button ng-if="item.status=='exists'"class="md-raised" ng-click="exa.restartServer($index, 'start')">Start</md-button>
+                    <md-button ng-if="item.status=='exists'"class="md-raised" ng-click="exa.restartServer($index, 'reset')">Restart</md-button>
+                </td>
             </tr>
             </tbody>
         </table>

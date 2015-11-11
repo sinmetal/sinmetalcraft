@@ -6,6 +6,7 @@ namespace SinmetalCraft {
     import IMessage = SinmetalCraft.Model.IMessage;
     import IListOptions = SinmetalCraft.Model.IListOptions;
     import IServerInsertRequest = SinmetalCraft.Model.IServerInsertRequest;
+    import IServerUpdateRequest = SinmetalCraft.Model.IServerUpdateRequest;
 
     export class ServerService {
         PATH = "/api/1/server";
@@ -21,5 +22,8 @@ namespace SinmetalCraft {
             return this.$http.post(this.PATH, param);
         }
 
+        update(param:IServerUpdateRequest):ng.IHttpPromise<IMessage> {
+            return this.$http.put(this.PATH, param);
+        }
     }
 }
