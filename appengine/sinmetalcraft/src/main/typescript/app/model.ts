@@ -78,4 +78,9 @@ namespace SinmetalCraft.Model {
     export interface IServerInsertRequest {
         key: string;
     }
+
+    export interface IServerUpdateRequest {
+        key: string;
+        operation: string;
+    }
 }

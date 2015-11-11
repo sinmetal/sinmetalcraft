@@ -200,7 +200,7 @@ func (a *ServerApi) Put(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf(`"{"message": "%s %s done!"}`, name, param.Operation)))
+	w.Write([]byte(fmt.Sprintf(`{"message": "%s %s done!"}`, name, param.Operation)))
 }
 
 // delete instance
