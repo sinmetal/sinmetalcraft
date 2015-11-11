@@ -1,0 +1,109 @@
+{
+  "name": "lookrec",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "es5-shim": "4.1.12",
+    "angular": "1.4.5",
+    "angular-route": "1.4.5",
+    "angular-animate": "1.4.5",
+    "angular-sanitize": "1.4.5",
+    "angular-cookies": "1.4.5",
+    "angular-translate": "2.8.1",
+    "angular-translate-storage-cookie": "2.8.1",
+    "angular-translate-storage-local": "2.8.1",
+    "angular-translate-loader-static-files": "2.8.1",
+    "angular-translate-handler-log": "2.8.1",
+    "angular-aria": "angular/bower-angular-aria#v1.4.5",
+    "angular-material": "0.11.4",
+    "angular-material-data-table": "0.8.14",
+    "jquery": "2.1.4",
+    "momentjs": "2.10.6",
+    "a0-angular-storage": "0.0.12"
+  },
+  "devDependencies": {
+    "mocha": "2.3.2",
+    "power-assert": "1.0.0",
+    "angular-mocks": "1.4.5",
+    "notify": "latest",
+    "sinonjs": "1.14.1"
+  },
+  "exportsOverride": {
+    "angular": {
+      "main-js": "angular.min.js"
+    },
+    "angular-route": {
+      "main-js": "angular-route.min.js"
+    },
+    "angular-animate": {
+      "main-js": "angular-animate.min.js"
+    },
+    "angular-sanitize": {
+      "main-js": "angular-sanitize.min.js"
+    },
+    "angular-cookies": {
+      "main-js": "angular-cookies.min.js"
+    },
+    "angular-translate": {
+      "main-js": "angular-translate.min.js"
+    },
+    "angular-translate-storage-cookie": {
+      "main-js": "angular-translate-storage-cookie.min.js"
+    },
+    "angular-translate-storage-local": {
+      "main-js": "angular-translate-storage-local.min.js"
+    },
+    "angular-translate-loader-static-files": {
+      "main-js": "angular-translate-loader-static-files.min.js"
+    },
+    "angular-translate-handler-log": {
+      "main-js": "angular-translate-handler-log.min.js"
+    },
+    "angular-aria": {
+      "main-js": "angular-aria.min.js"
+    },
+    "angular-material": {
+      "main-js": "angular-material.min.js",
+      "main-css": "angular-material.min.css",
+      "test-js": "angular-material-mocks.js"
+    },
+    "angular-material-data-table": {
+      "main-js": "dist/md-data-table.min.js",
+      "main-css": "dist/md-data-table.css"
+    },
+    "jquery": {
+      "main-js": "dist/jquery.min.js"
+    },
+    "mocha": {
+      "test-js": "*.js",
+      "test-css": "*.css"
+    },
+    "es5-shim": {
+      "main-js": "es5-shim.js"
+    },
+    "power-assert": {
+      "test-js": "build/*.js"
+    },
+    "angular-mocks": {
+      "test-js": "*.js"
+    },
+    "notify": {
+      "test-js": "*.js"
+    },
+    "momentjs": {
+      "main-js": "moment.js"
+    },
+    "a0-angular-storage": {
+      "main-js": "dist/angular-storage.min.js"
+    },
+    "sinonjs": {
+      "test-js": "sinon.js"
+    }
+  }
+}

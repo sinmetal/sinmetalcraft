@@ -1,0 +1,15 @@
+<div>
+    <form>
+        <p>Key : {{exa.store.example.key}}</p>
+        <div layout layout-sm="column">
+            <md-input-container flex>
+                <label>Name</label>
+                <input required ng-model="exa.param.name">
+            </md-input-container>
+        </div>
+        <p>CreatedAt : {{exa.store.example.createdAt}}</p>
+        <p>UpdatedAt : {{exa.store.example.updatedAt}}</p>
+        <md-button class="md-raised" ng-click="exa.backToDetail()">Cancel</md-button>
+        <md-button class="md-raised md-primary" ng-click="exa.update()">Submit</md-button>
+    </form>
+</div>

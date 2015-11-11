@@ -1,0 +1,29 @@
+<div>
+    <md-data-table-container>
+        <table md-data-table md-progress="deferred">
+            <thead>
+            <tr>
+                <th name="World"></th>
+                <th name="Zone"></th>
+                <th name="IPAddr"></th>
+                <th name="Status"></th>
+                <th name="CreatedAt"></th>
+                <th name="UpdatedAt"></th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr ng-repeat="item in exa.store.examples.items">
+                <td>{{item.world}}</td>
+                <td>{{item.zone}}</td>
+                <td>{{item.ipAddr}}</td>
+                <td>{{item.status}}</td>
+                <td>{{item.createdAt}}</td>
+                <td>{{item.updatedAt}}</td>
+                <td><md-button class="md-raised md-primary" ng-click="exa.startServer($index)">Start</md-button></td>
+            </tr>
+            </tbody>
+        </table>
+    </md-data-table-container>
+    <md-button class="md-raised" ng-if="exa.store.examples.hasNext" ng-click="exa.readMoreList(20)">Read more</md-button>
+</div>
