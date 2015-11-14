@@ -347,7 +347,18 @@ func handlerMinecraftLog(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	log.Infof(ctx, "request Pub Sub Data = %v", psd)
+
+	b, err := json.Marshal(psd)
+	if err != nil {
+		log.Errorf(ctx, "PubSubData json marshal error %v", err)
+	} else {
+		log.Infof(ctx, "request Pub Sub Data = %s", b)
+	}
+	if len(psd.StructPayload.Log) < 1 {
+		log.Infof(ctx, "StructPayload.Log is eompy.")
+		w.WriteHeader(http.StatusOK)
+		return
+	}
 
 	var sm SlackMessage
 	fields := make([]SlackField, 0)
@@ -362,7 +373,7 @@ func handlerMinecraftLog(w http.ResponseWriter, r *http.Request) {
 
 	sm.UserName = "sinmetalcraft"
 	sm.IconUrl = "https://storage.googleapis.com/sinmetalcraft-image/minecraft.jpeg"
-	sm.Text = psd.StructPayload.Log
+	sm.Text = ""
 	sm.Attachments = []SlackAttachment{sa}
 
 	acs := AppConfigService{}
