@@ -373,7 +373,7 @@ func handlerMinecraftLog(w http.ResponseWriter, r *http.Request) {
 
 	sm.UserName = "sinmetalcraft"
 	sm.IconUrl = "https://storage.googleapis.com/sinmetalcraft-image/minecraft.jpeg"
-	sm.Text = psd.StructPayload.Log
+	sm.Text = ""
 	sm.Attachments = []SlackAttachment{sa}
 
 	acs := AppConfigService{}
