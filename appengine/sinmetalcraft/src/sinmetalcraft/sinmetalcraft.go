@@ -399,6 +399,7 @@ func createInstance(ctx context.Context, is *compute.InstancesService, minecraft
 
 	startupScriptURL := "gs://sinmetalcraft-minecraft-shell/minecraftserver-startup-script.sh"
 	shutdownScriptURL := "gs://sinmetalcraft-minecraft-shell/minecraftserver-shutdown-script.sh"
+	stateValue := "new"
 	newIns := &compute.Instance{
 		Name:        name,
 		Zone:        "https://www.googleapis.com/compute/v1/projects/" + PROJECT_NAME + "/zones/" + minecraft.Zone,
@@ -450,7 +451,7 @@ func createInstance(ctx context.Context, is *compute.InstancesService, minecraft
 				},
 				&compute.MetadataItems{
 					Key:   "state",
-					Value: "new",
+					Value: &stateValue,
 				},
 			},
 		},
