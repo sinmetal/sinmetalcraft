@@ -448,6 +448,10 @@ func createInstance(ctx context.Context, is *compute.InstancesService, minecraft
 					Key:   "world",
 					Value: &minecraft.World,
 				},
+				&compute.MetadataItems{
+					Key:   "state",
+					Value: "new",
+				},
 			},
 		},
 		ServiceAccounts: []*compute.ServiceAccount{
