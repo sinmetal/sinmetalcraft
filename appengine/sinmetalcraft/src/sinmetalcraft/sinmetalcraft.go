@@ -474,6 +474,13 @@ func createInstance(ctx context.Context, is *compute.InstancesService, minecraft
 					"https://www.googleapis.com/auth/logging.write",
 				},
 			},
+			&compute.ServiceAccount{
+				Email: "default",
+				Scopes: []string{
+					compute.ComputeScope,
+					"https://www.googleapis.com/auth/logging.write",
+				},
+			},
 		},
 		Scheduling: &compute.Scheduling{
 			AutomaticRestart:  false,
