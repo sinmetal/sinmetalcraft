@@ -1,5 +1,1 @@
 cron:
-- description: vacuum terminated instance
-  url: /cron/1/minecraft/vacuum
-  target: default
-  schedule: every 45 minutes
