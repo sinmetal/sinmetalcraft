@@ -414,7 +414,7 @@ func createInstance(ctx context.Context, is *compute.InstancesService, minecraft
 	newIns := &compute.Instance{
 		Name:        name,
 		Zone:        "https://www.googleapis.com/compute/v1/projects/" + PROJECT_NAME + "/zones/" + minecraft.Zone,
-		MachineType: "https://www.googleapis.com/compute/v1/projects/" + PROJECT_NAME + "/zones/" + minecraft.Zone + "/machineTypes/n1-standard-4",
+		MachineType: "https://www.googleapis.com/compute/v1/projects/" + PROJECT_NAME + "/zones/" + minecraft.Zone + "/machineTypes/n1-highmem-4",
 		Disks: []*compute.AttachedDisk{
 			&compute.AttachedDisk{
 				AutoDelete: true,
