@@ -41,6 +41,7 @@ type Minecraft struct {
 	Status          string         `json:"status" datastore:",unindexed"`
 	OperationType   string         `json:"operationType" datastore:",unindexed"`
 	OperationStatus string         `json:"operationstatus" datastore:",unindexed"`
+	LatestSnapshot  string         `json:"latestSnpshot" datastore:",unindexed"`
 	CreatedAt       time.Time      `json:"createdAt"`
 	UpdatedAt       time.Time      `json:"updatedAt"`
 }
@@ -403,9 +404,30 @@ func listInstance(ctx context.Context, is *compute.InstancesService, zone string
 	return il.Items, il.NextPageToken, nil
 }
 
+// create disk from snapshot
+func createDiskFromSnapshot(ctx context.Context, ds *compute.DisksService, minecraft Minecraft) (*compute.Operation, error) {
+	name := fmt.Sprintf("%s-world-%s", INSTANCE_NAME, minecraft.World)
+	d := &compute.Disk{
+		Name:           name,
+		SizeGb:         100,
+		SourceSnapshot: "https://www.googleapis.com/compute/v1/projects/" + PROJECT_NAME + "/global/snapshots/" + minecraft.LatestSnapshot,
+		Type:           "https://www.googleapis.com/compute/v1/projects/" + PROJECT_NAME + "/zones/" + minecraft.Zone + "/diskTypes/pd-ssd",
+	}
+
+	ope, err := ds.Insert(PROJECT_NAME, minecraft.Zone, d).Do()
+	if err != nil {
+		log.Errorf(ctx, "ERROR insert disk: %s", err)
+		return nil, err
+	}
+	WriteLog(ctx, "INSTNCE_DISK_OPE", ope)
+
+	return ope, err
+}
+
 // create gce instance
 func createInstance(ctx context.Context, is *compute.InstancesService, minecraft Minecraft) (string, error) {
 	name := INSTANCE_NAME + "-" + minecraft.World
+	worldDiskName := fmt.Sprintf("%s-world-%s", INSTANCE_NAME, minecraft.World)
 	log.Infof(ctx, "create instance name = %s", name)
 
 	startupScriptURL := "gs://sinmetalcraft-minecraft-shell/minecraftserver-startup-script.sh"
@@ -414,7 +436,7 @@ func createInstance(ctx context.Context, is *compute.InstancesService, minecraft
 	newIns := &compute.Instance{
 		Name:        name,
 		Zone:        "https://www.googleapis.com/compute/v1/projects/" + PROJECT_NAME + "/zones/" + minecraft.Zone,
-		MachineType: "https://www.googleapis.com/compute/v1/projects/" + PROJECT_NAME + "/zones/" + minecraft.Zone + "/machineTypes/n1-standard-4",
+		MachineType: "https://www.googleapis.com/compute/v1/projects/" + PROJECT_NAME + "/zones/" + minecraft.Zone + "/machineTypes/n1-highcpu-4",
 		Disks: []*compute.AttachedDisk{
 			&compute.AttachedDisk{
 				AutoDelete: true,
@@ -426,6 +448,13 @@ func createInstance(ctx context.Context, is *compute.InstancesService, minecraft
 					DiskType:    "https://www.googleapis.com/compute/v1/projects/" + PROJECT_NAME + "/zones/" + minecraft.Zone + "/diskTypes/pd-ssd",
 					DiskSizeGb:  100,
 				},
+			},
+			&compute.AttachedDisk{
+				AutoDelete: true,
+				Boot:       false,
+				DeviceName: worldDiskName,
+				Mode:       "READ_WRITE",
+				Source:     "https://www.googleapis.com/compute/v1/projects/" + PROJECT_NAME + "/zones/" + minecraft.Zone + "/disks/" + worldDiskName,
 			},
 		},
 		CanIpForward: false,
@@ -471,6 +500,7 @@ func createInstance(ctx context.Context, is *compute.InstancesService, minecraft
 				Email: "default",
 				Scopes: []string{
 					compute.DevstorageReadWriteScope,
+					compute.ComputeScope,
 					"https://www.googleapis.com/auth/logging.write",
 				},
 			},

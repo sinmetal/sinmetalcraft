@@ -102,17 +102,25 @@ func (a *ServerApi) Post(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	is := compute.NewInstancesService(s)
-	name, err := createInstance(ctx, is, minecraft)
+	ds := compute.NewDisksService(s)
+	ope, err := createDiskFromSnapshot(ctx, ds, minecraft)
 	if err != nil {
-		log.Errorf(ctx, "ERROR compute instances create: %s", err)
+		log.Errorf(ctx, "ERROR create disk: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	stqAPI := ServerTQApi{}
+	_, err = stqAPI.CallCreateInstance(ctx, minecraft.Key, ope.Name)
+	if err != nil {
+		log.Errorf(ctx, "ERROR call create instance tq: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(fmt.Sprintf(`{"message" : "%s create done!"}`, name)))
+	w.Write([]byte(fmt.Sprintf(`{"message" : "%s create done!"}`, minecraft.World)))
 }
 
 // reset or start instance
