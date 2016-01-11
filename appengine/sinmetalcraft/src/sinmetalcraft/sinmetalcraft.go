@@ -42,6 +42,7 @@ type Minecraft struct {
 	OperationType   string         `json:"operationType" datastore:",unindexed"`
 	OperationStatus string         `json:"operationstatus" datastore:",unindexed"`
 	LatestSnapshot  string         `json:"latestSnpshot" datastore:",unindexed"`
+	JarVersion      string         `json:"jarVersion" datastore:",unindexed"`
 	CreatedAt       time.Time      `json:"createdAt"`
 	UpdatedAt       time.Time      `json:"updatedAt"`
 }
@@ -221,6 +222,7 @@ func (a *MinecraftApi) Put(w http.ResponseWriter, r *http.Request) {
 
 		entity.IPAddr = minecraft.IPAddr
 		entity.Zone = minecraft.Zone
+		entity.JarVersion = minecraft.JarVersion
 		entity.UpdatedAt = time.Now()
 		_, err = datastore.Put(ctx, key, &minecraft)
 		if err != nil {
@@ -444,7 +446,7 @@ func createInstance(ctx context.Context, is *compute.InstancesService, minecraft
 				DeviceName: name,
 				Mode:       "READ_WRITE",
 				InitializeParams: &compute.AttachedDiskInitializeParams{
-					SourceImage: "https://www.googleapis.com/compute/v1/projects/" + PROJECT_NAME + "/global/images/minecraft-image-v20151114a",
+					SourceImage: "https://www.googleapis.com/compute/v1/projects/" + PROJECT_NAME + "/global/images/minecraft-image-v20160111a",
 					DiskType:    "https://www.googleapis.com/compute/v1/projects/" + PROJECT_NAME + "/zones/" + minecraft.Zone + "/diskTypes/pd-ssd",
 					DiskSizeGb:  100,
 				},
@@ -492,6 +494,10 @@ func createInstance(ctx context.Context, is *compute.InstancesService, minecraft
 				&compute.MetadataItems{
 					Key:   "state",
 					Value: &stateValue,
+				},
+				&compute.MetadataItems{
+					Key:   "minecraft-version",
+					Value: &minecraft.JarVersion,
 				},
 			},
 		},
