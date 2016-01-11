@@ -1,7 +1,15 @@
 application: sinmetalcraft
+module: default
 version: 20151012a
 runtime: go
 api_version: go1
+instance_class: F1
+automatic_scaling:
+  min_idle_instances: automatic
+  max_idle_instances: 1
+  min_pending_latency: automatic
+  max_pending_latency: automatic
+  max_concurrent_requests: 100
 
 handlers:
 - url: /
