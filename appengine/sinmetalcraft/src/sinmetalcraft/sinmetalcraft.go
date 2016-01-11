@@ -224,7 +224,7 @@ func (a *MinecraftApi) Put(w http.ResponseWriter, r *http.Request) {
 		entity.Zone = minecraft.Zone
 		entity.JarVersion = minecraft.JarVersion
 		entity.UpdatedAt = time.Now()
-		_, err = datastore.Put(ctx, key, &minecraft)
+		_, err = datastore.Put(ctx, key, &entity)
 		if err != nil {
 			return err
 		}
