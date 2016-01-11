@@ -148,7 +148,7 @@ func (a *MinecraftApi) Post(w http.ResponseWriter, r *http.Request) {
 			return err
 		}
 
-		minecraft.Status = "no_exists"
+		minecraft.Status = "not_exists"
 		now := time.Now()
 		minecraft.CreatedAt = now
 		minecraft.UpdatedAt = now
