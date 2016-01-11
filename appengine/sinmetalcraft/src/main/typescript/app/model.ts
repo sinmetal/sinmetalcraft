@@ -45,6 +45,7 @@ namespace SinmetalCraft.Model {
         status: string;
         operationType: string;
         operationStatus: string;
+        jarVersion: string;
         createdAt?: string;
         updatedAt?: string;
     }
