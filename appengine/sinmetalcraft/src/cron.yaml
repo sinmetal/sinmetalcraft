@@ -3,3 +3,8 @@ cron:
   url: /cron/1/minecraft/vacuum
   target: default
   schedule: every 45 minutes
+- description: update overviewer
+  url: /cron/1/overviewer
+  target: default
+  schedule: every day 05:00
+  timezone: Asia/Tokyo

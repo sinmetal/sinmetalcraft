@@ -8,6 +8,7 @@
                 <th name="Zone"></th>
                 <th name="IPAddr"></th>
                 <th name="Status"></th>
+                <th name="Overviewer"></th>
                 <th name="CreatedAt"></th>
                 <th name="UpdatedAt"></th>
                 <th></th>
@@ -20,6 +21,7 @@
                 <td>{{item.zone}}</td>
                 <td>{{item.ipAddr}}</td>
                 <td>{{item.status}}</td>
+                <td><a ng-href="https://storage.googleapis.com/sinmetalcraft-overviewer/{{item.world}}/index.html" target="_blank">overviewer</a></td>
                 <td>{{item.createdAt}}</td>
                 <td>{{item.updatedAt}}</td>
                 <td>
