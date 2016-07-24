@@ -53,24 +53,39 @@ func (a *MinecraftCronApi) Handler(w http.ResponseWriter, r *http.Request) {
 
 	ds := compute.NewDisksService(s)
 
+	taskCount := 0
 	api := MinecraftCronApi{}
-	receiver := make([]<-chan error, 0)
+
+	receiver := make(chan error)
 	for _, ins := range instances {
 		log.Infof(ctx, "Instance Name = %s, Status = %s", ins.Name, ins.Status)
 
 		if strings.HasPrefix(ins.Name, "minecraft-") {
 			log.Infof(ctx, `%s has prefix "minecraft-"`, ins.Name)
 			if ins.Status == "TERMINATED" {
-				ch := api.createSnapshot(ctx, ds, ins.Name[len("minecraft-"):len(ins.Name)])
-				receiver = append(receiver, ch)
+				taskCount++
+				go func() {
+					err = api.createSnapshot(ctx, ds, ins.Name[len("minecraft-"):len(ins.Name)])
+					receiver <- err
+				}()
+			}
+		} else if strings.HasPrefix(ins.Name, OverviewerInstanceName) {
+			log.Infof(ctx, `%s has prefix %s`, ins.Name, OverviewerInstanceName)
+			if ins.Status == "TERMINATED" {
+				oapi := OverviewerAPI{}
+				taskCount++
+				go func() {
+					err = oapi.deleteInstance(ctx, is, ins.Name)
+					receiver <- err
+				}()
 			}
 		} else {
-			log.Infof(ctx, `%s has not prefix "minecraft-"`, ins.Name)
+			log.Infof(ctx, `%s has not prefix.`, ins.Name)
 		}
 	}
 	var hasError bool
-	for _, ch := range receiver {
-		err := <-ch
+	for i := 0; i < taskCount; i++ {
+		err := <-receiver
 		if err != nil {
 			hasError = true
 			log.Errorf(ctx, "ERROR : Delete Instance Error = %s", err.Error())
@@ -111,44 +126,37 @@ func (a *MinecraftCronApi) deleteInstance(ctx context.Context, is *compute.Insta
 }
 
 // create snapshot
-func (a *MinecraftCronApi) createSnapshot(ctx context.Context, ds *compute.DisksService, world string) <-chan error {
+func (a *MinecraftCronApi) createSnapshot(ctx context.Context, ds *compute.DisksService, world string) error {
 	sn := fmt.Sprintf("minecraft-world-%s-%s", world, time.Now().Format("20060102-150405"))
 	log.Infof(ctx, "create snapshot %s", sn)
 
-	receiver := make(chan error)
-	go func() {
-		var minecraft Minecraft
-		key := datastore.NewKey(ctx, "Minecraft", world, 0, nil)
+	var minecraft Minecraft
+	key := datastore.NewKey(ctx, "Minecraft", world, 0, nil)
 
-		err := datastore.Get(ctx, key, &minecraft)
-		if err == datastore.ErrNoSuchEntity {
-			log.Infof(ctx, "Minecraft Entity Not Found. world = %s", world)
-			receiver <- nil
-			return
-		}
-		if err != nil {
-			receiver <- nil
-			return
-		}
-		minecraft.Key = key
+	err := datastore.Get(ctx, key, &minecraft)
+	if err == datastore.ErrNoSuchEntity {
+		log.Infof(ctx, "Minecraft Entity Not Found. world = %s", world)
+		return nil
+	}
+	if err != nil {
+		return nil
+	}
+	minecraft.Key = key
 
-		s := &compute.Snapshot{
-			Name: sn,
-		}
+	s := &compute.Snapshot{
+		Name: sn,
+	}
 
-		disk := fmt.Sprintf("minecraft-world-%s", world)
-		ope, err := ds.CreateSnapshot(PROJECT_NAME, minecraft.Zone, disk, s).Do()
-		if err != nil {
-			log.Errorf(ctx, "ERROR insert snapshot: %s", err)
-			receiver <- err
-			return
-		}
-		WriteLog(ctx, "INSTNCE_SNAPSHOT_OPE", ope)
+	disk := fmt.Sprintf("minecraft-world-%s", world)
+	ope, err := ds.CreateSnapshot(PROJECT_NAME, minecraft.Zone, disk, s).Do()
+	if err != nil {
+		log.Errorf(ctx, "ERROR insert snapshot: %s", err)
+		return err
+	}
+	WriteLog(ctx, "INSTNCE_SNAPSHOT_OPE", ope)
 
-		tq := ServerTQApi{}
-		_, err = tq.CallDeleteInstance(ctx, minecraft.Key, ope.Name, sn)
-		receiver <- err
-	}()
+	tq := ServerTQApi{}
+	_, err = tq.CallDeleteInstance(ctx, minecraft.Key, ope.Name, sn)
 
-	return receiver
+	return err
 }

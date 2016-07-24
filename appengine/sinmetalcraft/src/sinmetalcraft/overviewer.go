@@ -22,7 +22,7 @@ import (
 
 type OverviewerAPI struct{}
 
-const OverviewerInstanceName = "minecraft-overviewer"
+const OverviewerInstanceName = "overviewer"
 const OverViewerWorldDiskFormat = "%s-overviewer-world-%s"
 
 func init() {
@@ -213,6 +213,22 @@ func (a *OverviewerAPI) createInstance(ctx context.Context, is *compute.Instance
 	WriteLog(ctx, "INSTNCE_CREATE_OPE", ope)
 
 	return name, nil
+}
+
+// delete instance
+func (a *OverviewerAPI) deleteInstance(ctx context.Context, is *compute.InstancesService, instanceName string) error {
+	log.Infof(ctx, "delete instance name = %s", instanceName)
+
+	ope, err := is.Delete(PROJECT_NAME, "asia-east1-b", instanceName).Do()
+	if err != nil {
+		log.Errorf(ctx, "ERROR delete instance: %s", err)
+		return err
+	}
+	WriteLog(ctx, "INSTNCE_DELETE_OPE", ope)
+
+	// TODO opeの結果を追うTQを作成する
+
+	return nil
 }
 
 func (a *OverviewerAPI) CallCreateInstance(c context.Context, minecraftKey *datastore.Key, operationID string) (*taskqueue.Task, error) {
