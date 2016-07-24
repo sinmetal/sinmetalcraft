@@ -17,5 +17,13 @@ gsutil -m -h "Cache-Control: public,max-age=3600" cp -a public-read -r overviewe
 
 INSTANCE_NAME=$(curl http://metadata/computeMetadata/v1/instance/hostname -H "Metadata-Flavor: Google")
 INSTANCE_ZONE=$(curl http://metadata/computeMetadata/v1/instance/zone -H "Metadata-Flavor: Google")
+IFS='.'
+set -- $INSTANCE_NAME
+INSTANCE_NAME=$(echo $1)
+echo $INSTANCE_NAME
 
-gcloud compute instances delete $INSTANCE_NAME --zone $INSTANCE_ZONE
+IFS='/'
+set -- $INSTANCE_ZONE
+INSTANCE_ZONE=$4
+echo $INSTANCE_ZONE
+yes | gcloud compute instances delete $INSTANCE_NAME --zone $INSTANCE_ZONE
