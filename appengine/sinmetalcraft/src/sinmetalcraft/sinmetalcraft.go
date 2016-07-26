@@ -32,19 +32,20 @@ func init() {
 }
 
 type Minecraft struct {
-	Key             *datastore.Key `json:"-" datastore:"-"`
-	KeyStr          string         `json:"key" datastore:"-"`
-	World           string         `json:"world"`
-	ResourceID      int64          `json:"resourceID"`
-	Zone            string         `json:"zone" datastore:",unindexed"`
-	IPAddr          string         `json:"ipAddr" datastore:",unindexed"`
-	Status          string         `json:"status" datastore:",unindexed"`
-	OperationType   string         `json:"operationType" datastore:",unindexed"`
-	OperationStatus string         `json:"operationstatus" datastore:",unindexed"`
-	LatestSnapshot  string         `json:"latestSnpshot" datastore:",unindexed"`
-	JarVersion      string         `json:"jarVersion" datastore:",unindexed"`
-	CreatedAt       time.Time      `json:"createdAt"`
-	UpdatedAt       time.Time      `json:"updatedAt"`
+	Key                *datastore.Key `json:"-" datastore:"-"`
+	KeyStr             string         `json:"key" datastore:"-"`
+	World              string         `json:"world"`
+	ResourceID         int64          `json:"resourceID"`
+	Zone               string         `json:"zone" datastore:",unindexed"`
+	IPAddr             string         `json:"ipAddr" datastore:",unindexed"`
+	Status             string         `json:"status" datastore:",unindexed"`
+	OperationType      string         `json:"operationType" datastore:",unindexed"`
+	OperationStatus    string         `json:"operationstatus" datastore:",unindexed"`
+	LatestSnapshot     string         `json:"latestSnpshot" datastore:",unindexed"`
+	JarVersion         string         `json:"jarVersion" datastore:",unindexed"`
+	OverviewerSnapshot string         `json:"overViewerSnapshot" datastore:",unindexed"` // Minecraft Overviewerを作成済みのsnapshot name
+	CreatedAt          time.Time      `json:"createdAt"`
+	UpdatedAt          time.Time      `json:"updatedAt"`
 }
 
 type MinecraftApiListResponse struct {
