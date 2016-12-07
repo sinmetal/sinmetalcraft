@@ -44,7 +44,7 @@ func (a *MinecraftCronApi) Handler(w http.ResponseWriter, r *http.Request) {
 	}
 	is := compute.NewInstancesService(s)
 
-	instances, _, err := listInstance(ctx, is, "asia-east1-b")
+	instances, _, err := listInstance(ctx, is, "asia-northeast1-b")
 	if err != nil {
 		log.Errorf(ctx, "ERROR list instance error %s", err.Error())
 		w.WriteHeader(http.StatusInternalServerError)

@@ -16,4 +16,4 @@ if [ ${STATE} = "exists" ]; then
 fi
 echo "NEW INSTNCE"
 screen -d -m -S mcs java -Xms1G -Xmx7G -d64 -jar $MC_JAR nogui
-gcloud compute instances add-metadata $HOSTNAME --zone=asia-east1-b --metadata state=exists
+gcloud compute instances add-metadata $HOSTNAME --zone=asia-northeast1-b --metadata state=exists
