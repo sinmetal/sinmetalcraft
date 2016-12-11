@@ -73,9 +73,9 @@ func (a *MinecraftTQApi) Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	nzos := compute.NewZoneOperationsService(s)
-	ope, err := nzos.Get(PROJECT_NAME, "asia-east1-b", operationID).Do()
+	ope, err := nzos.Get(PROJECT_NAME, "asia-northeast1-b", operationID).Do()
 	if err != nil {
-		log.Errorf(ctx, "ERROR compute Zone Operation Get Error. zone = %s, operation = %s, error = %s", "asia-east1-b", operationID, err.Error())
+		log.Errorf(ctx, "ERROR compute Zone Operation Get Error. zone = %s, operation = %s, error = %s", "asia-northeast1-b", operationID, err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

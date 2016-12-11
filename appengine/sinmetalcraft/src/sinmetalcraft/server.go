@@ -317,7 +317,7 @@ func (a *ServerApi) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	is := compute.NewInstancesService(s)
-	instances, cursor, err := listInstance(ctx, is, "asia-east1-b")
+	instances, cursor, err := listInstance(ctx, is, "asia-northeast1-b")
 	if err != nil {
 		log.Errorf(ctx, "ERROR compute.Instance List: %s", err)
 		w.WriteHeader(http.StatusInternalServerError)
