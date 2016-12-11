@@ -219,7 +219,7 @@ func (a *OverviewerAPI) createInstance(ctx context.Context, is *compute.Instance
 func (a *OverviewerAPI) deleteInstance(ctx context.Context, is *compute.InstancesService, instanceName string) error {
 	log.Infof(ctx, "delete instance name = %s", instanceName)
 
-	ope, err := is.Delete(PROJECT_NAME, "asia-east1-b", instanceName).Do()
+	ope, err := is.Delete(PROJECT_NAME, "asia-northeast1-b", instanceName).Do()
 	if err != nil {
 		log.Errorf(ctx, "ERROR delete instance: %s", err)
 		return err
@@ -278,9 +278,9 @@ func (a *OverviewerAPI) handleTQCreateInstace(w http.ResponseWriter, r *http.Req
 		return
 	}
 	nzos := compute.NewZoneOperationsService(s)
-	ope, err := nzos.Get(PROJECT_NAME, "asia-east1-b", operationID).Do()
+	ope, err := nzos.Get(PROJECT_NAME, "asia-northeast1-b", operationID).Do()
 	if err != nil {
-		log.Errorf(ctx, "ERROR compute Zone Operation Get Error. zone = %s, operation = %s, error = %s", "asia-east1-b", operationID, err.Error())
+		log.Errorf(ctx, "ERROR compute Zone Operation Get Error. zone = %s, operation = %s, error = %s", "asia-northeast1-b", operationID, err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
