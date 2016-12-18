@@ -123,8 +123,7 @@ func (a *OverviewerAPI) createInstance(ctx context.Context, is *compute.Instance
 	worldDiskName := fmt.Sprintf(OverViewerWorldDiskFormat, INSTANCE_NAME, minecraft.World)
 	log.Infof(ctx, "create instance name = %s", name)
 
-	startupScriptURL := "gs://sinmetalcraft-minecraft-shell/minecraft-overviewer-server-startup-script.sh"
-	shutdownScriptURL := "gs://sinmetalcraft-minecraft-shell/minecraft-overviewer-shutdown-script.sh"
+	startupScriptURL := "gs://sinmetalcraft-minecraft-shell/minecraft-overviewer-startup-script.sh"
 	stateValue := "new"
 	newIns := &compute.Instance{
 		Name:        name,
@@ -170,10 +169,6 @@ func (a *OverviewerAPI) createInstance(ctx context.Context, is *compute.Instance
 				&compute.MetadataItems{
 					Key:   "startup-script-url",
 					Value: &startupScriptURL,
-				},
-				&compute.MetadataItems{
-					Key:   "shutdown-script-url",
-					Value: &shutdownScriptURL,
 				},
 				&compute.MetadataItems{
 					Key:   "world",

@@ -4,6 +4,7 @@ sudo /usr/share/google/safe_format_and_mount /dev/sdb /home/minecraft/world/
 sudo rm world/session.lock
 WORLD=$(curl http://metadata/computeMetadata/v1/instance/attributes/world -H "Metadata-Flavor: Google")
 MC_VERSION=$(curl http://metadata/computeMetadata/v1/instance/attributes/minecraft-version -H "Metadata-Flavor: Google")
+sudo gsutil cp "gs://sinmetalcraft-overviewer/client/*" /home/minecraft
 sudo echo 'worlds["'$WORLD'"] = "/home/minecraft/world"' >> minecraft-overviwer.config
 sudo echo 'renders["normalrender"] = {' >> minecraft-overviwer.config
 sudo echo '"world": "'$WORLD'",' >> minecraft-overviwer.config
