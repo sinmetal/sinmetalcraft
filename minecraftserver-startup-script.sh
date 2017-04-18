@@ -1,4 +1,9 @@
 #!/bin/bash
+# Update Cloud DNS
+sudo gsutil cp gs://sinmetalcraft-minecraft-shell/dns.sh .
+sudo chmod 700 dns.sh
+sudo ./dns.sh
+# Minecraft Server Start
 cd /home/minecraft
 sudo /usr/share/google/safe_format_and_mount /dev/sdb /home/minecraft/world/
 sudo rm world/session.lock
