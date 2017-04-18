@@ -50,7 +50,7 @@ type Minecraft struct {
 
 type MinecraftApiListResponse struct {
 	Items  []MinecraftApiResponse `json:"items"`
-	Cursor string                 `json:cursor`
+	Cursor string                 `json:"cursor"`
 }
 
 type MinecraftApiResponse struct {
@@ -468,7 +468,6 @@ func createInstance(ctx context.Context, is *compute.InstancesService, minecraft
 					&compute.AccessConfig{
 						Name:  "External NAT",
 						Type:  "ONE_TO_ONE_NAT",
-						NatIP: minecraft.IPAddr,
 					},
 				},
 			},
