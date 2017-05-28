@@ -5,6 +5,7 @@ sudo chmod 700 dns.sh
 sudo ./dns.sh
 # Minecraft Server Start
 cd /home/minecraft
+sudo gsutil cp gs://sinmetalcraft-minecraft-shell/ops.json .
 sudo /usr/share/google/safe_format_and_mount /dev/sdb /home/minecraft/world/
 sudo rm world/session.lock
 STATE=$(curl http://metadata/computeMetadata/v1/instance/attributes/state -H "Metadata-Flavor: Google")
