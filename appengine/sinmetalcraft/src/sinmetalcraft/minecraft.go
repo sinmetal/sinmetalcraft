@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"google.golang.org/appengine/datastore"
+	"google.golang.org/appengine/log"
 
 	"golang.org/x/net/context"
 )
@@ -26,4 +27,14 @@ func (m *Minecraft) UpdateOverviewerSnapshot(ctx context.Context, key *datastore
 
 		return nil
 	}, nil)
+}
+
+//QueryExistsServers is 起動しているサーバ一覧を取得
+func (m *Minecraft) QueryExistsServers(ctx context.Context) ([]Minecraft, error) {
+	var minecrafts []Minecraft
+	_, err := datastore.NewQuery("Minecraft").Filter("Status = ", "exists").GetAll(ctx, &minecrafts)
+	if err != nil {
+		log.Errorf(ctx, "Minecraft Query error. %s\n", err.Error())
+	}
+	return minecrafts, nil
 }
