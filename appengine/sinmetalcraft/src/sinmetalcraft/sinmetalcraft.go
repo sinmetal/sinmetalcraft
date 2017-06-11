@@ -466,8 +466,8 @@ func createInstance(ctx context.Context, is *compute.InstancesService, minecraft
 				Network: "https://www.googleapis.com/compute/v1/projects/" + PROJECT_NAME + "/global/networks/default",
 				AccessConfigs: []*compute.AccessConfig{
 					&compute.AccessConfig{
-						Name:  "External NAT",
-						Type:  "ONE_TO_ONE_NAT",
+						Name: "External NAT",
+						Type: "ONE_TO_ONE_NAT",
 					},
 				},
 			},
