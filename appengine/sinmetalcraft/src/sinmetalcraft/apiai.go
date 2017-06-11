@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"golang.org/x/net/context"
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/log"
 )
@@ -123,7 +124,7 @@ func (a *ApiAIApi) handler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	var responseText = "ここがSlackか"
+
 	var configService AppConfigService
 	config, err := configService.Get(c)
 	if err != nil {
@@ -131,24 +132,23 @@ func (a *ApiAIApi) handler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if req.Result.Metadata.IntentID == config.APIAIIntentIDRunServer {
-		var m Minecraft
-		l, err := m.QueryExistsServers(c)
-		if err != nil {
-			log.Errorf(c, "%s", err.Error())
-		} else {
-			if len(l) > 0 {
-				var worlds = make([]string, len(l), len(l))
-				for i, v := range l {
-					worlds[i] = v.World
-				}
-				text := strings.Join(worlds[:], ",")
-				responseText = fmt.Sprintf("起動しているのは `%s` だよ！", text)
-			} else {
-				responseText = "起動しているサーバはないみたい"
-			}
 
+	var responseText string
+	switch req.Result.Metadata.IntentID {
+	case config.APIAIIntentIDRunServer:
+		responseText, err = intentRunServerList(c)
+		if err != nil {
+			log.Errorf(c, "intentRunServerList err. %s", err.Error())
+			responseText = "すみません。しくじりました。"
 		}
+	case config.APIAIIntentIDItemRecipe:
+		responseText, err = intentItemRecipe(c, req.Result.Parameters["item"])
+		if err != nil {
+			log.Errorf(c, "intentRunServerList err. %s", err.Error())
+			responseText = "すみません。しくじりました。"
+		}
+	default:
+		responseText = "ここがSlackか"
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -171,5 +171,36 @@ func (a *ApiAIApi) handler(w http.ResponseWriter, r *http.Request) {
 	err = json.NewEncoder(w).Encode(res)
 	if err != nil {
 		log.Errorf(c, "%s", err.Error())
+	}
+}
+
+func intentRunServerList(c context.Context) (string, error) {
+	var m Minecraft
+	l, err := m.QueryExistsServers(c)
+	if err != nil {
+		log.Errorf(c, "%s", err.Error())
+		return "", err
+	}
+
+	if len(l) > 0 {
+		var worlds = make([]string, len(l), len(l))
+		for i, v := range l {
+			worlds[i] = v.World
+		}
+		text := strings.Join(worlds[:], ",")
+		return fmt.Sprintf("起動しているのは `%s` だよ！", text), nil
+	}
+
+	return "起動しているサーバはないみたい", nil
+}
+
+func intentItemRecipe(c context.Context, item string) (string, error) {
+	switch item {
+	case "ax":
+		return "789石, 52木の棒", nil
+	case "sword":
+		return "85石, 2木の棒", nil
+	default:
+		return "そのアイテムは知りません。", nil
 	}
 }
