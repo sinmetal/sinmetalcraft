@@ -6,13 +6,19 @@ sudo ./dns.sh
 # Minecraft Server Start
 cd /home/minecraft
 sudo gsutil cp gs://sinmetalcraft-minecraft-shell/ops.json .
-sudo /usr/share/google/safe_format_and_mount /dev/sdb /home/minecraft/world/
+WORLD=$(curl http://metadata/computeMetadata/v1/instance/attributes/world -H "Metadata-Flavor: Google")
+WORLD_DISK_PREFIX=/dev/disk/by-id/google-minecraft-world-
+WORLD_DISK=$WORLD_DISK_PREFIX$WORLD
+sudo mount -o discard,defaults $WORLD_DISK /home/minecraft/world/
 sudo rm world/session.lock
-STATE=$(curl http://metadata/computeMetadata/v1/instance/attributes/state -H "Metadata-Flavor: Google")
 MC_VERSION=$(curl http://metadata/computeMetadata/v1/instance/attributes/minecraft-version -H "Metadata-Flavor: Google")
 MC_APP="minecraft_server."
 JAR=".jar"
 MC_JAR=$MC_APP$MC_VERSION$JAR
+GCS_BUCKET=gs://sinmetalcraft-minecraft-jar/
+GCS_MC_JAR_PATH=$GCS_BUCKET$MC_JAR
+sudo gsutil cp $GCS_MC_JAR_PATH .
+STATE=$(curl http://metadata/computeMetadata/v1/instance/attributes/state -H "Metadata-Flavor: Google")
 echo $STATE
 if [ ${STATE} = "exists" ]; then
   echo "EXISTS INSTNCE"
