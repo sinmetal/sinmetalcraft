@@ -16,11 +16,9 @@ sudo echo 'outputdir = "/home/minecraft/overviewer/'$WORLD'"' >> minecraft-overv
 sudo overviewer.py --config=/home/minecraft/minecraft-overviwer.config
 gsutil -m -h "Cache-Control: public,max-age=3600" cp -a public-read -r overviewer/$WORLD gs://sinmetalcraft-overviewer
 
-INSTANCE_NAME=$(curl http://metadata/computeMetadata/v1/instance/hostname -H "Metadata-Flavor: Google")
+INSTANCE_NAME=$(curl http://metadata/computeMetadata/v1/instance/name -H "Metadata-Flavor: Google")
 INSTANCE_ZONE=$(curl http://metadata/computeMetadata/v1/instance/zone -H "Metadata-Flavor: Google")
-IFS='.'
-set -- $INSTANCE_NAME
-INSTANCE_NAME=$(echo $1)
+
 echo $INSTANCE_NAME
 
 IFS='/'
