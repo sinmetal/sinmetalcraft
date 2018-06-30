@@ -1,0 +1,6 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '--tag=gcr.io/$PROJECT_ID/minecraft/$BRANCH_NAME:$COMMIT_SHA', '.']
+- name: 'gcr.io/cloud-builders/docker'
+  args: ["push", "gcr.io/$PROJECT_ID/minecraft/$BRANCH_NAME:$COMMIT_SHA"]
+images: ['gcr.io/$PROJECT_ID/minecraft/$BRANCH_NAME:$COMMIT_SHA']
